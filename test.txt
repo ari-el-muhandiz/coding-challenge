@@ -1,0 +1,20 @@
+property0|property1|property2|net_sales|net_sales_units
+$total| $total| $total| 599051.63| 2728
+accessories| handbags| $total| 52589.06| 145
+accessories| handbags| clutch| 98| 1
+accessories| $total| $total| 84786.29| 310
+accessories| handbags| crossbody| 21242| 66
+accessories| men| bags| 21232.8| 41
+accessories| men| $total| 21232.8| 41
+accessories| handbags| shoulder| 12158.71| 32
+accessories| small leather goods| $total| 10927.64| 123
+accessories| small leather goods| small leather goods| 10927.64| 123
+accessories| handbags| hobo| 8167| 19
+accessories| handbags| tote| 7166.2| 17
+accessories| handbags| satchel| 3757.14| 10
+accessories| giftable| $total| 57| 1
+accessories| giftable| giftable| 57| 1
+accessories| eye| $total| 0| 0
+accessories| eye| eye| 0| 0
+accessories| belts| $total| -20.19| 0
+accessories| belts| womens| -20.19| 0
