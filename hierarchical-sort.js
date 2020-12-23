@@ -38,6 +38,35 @@ const writeFileFromArr =  (filename = 'example.out', arr = []) => {
     file.end()
 }
 
+const getTotalProperties = (data) => {
+    let total = 0;
+    Object.keys(data).forEach((d) => {
+        if (d.includes('property')) {
+            total += 1;
+        }
+    })
+    return total;
+}
+
+const sortFunc = (key, sortBy, totalProperties = 0) => {
+    return (a , b) => {
+        const splittedKeys = key.split('property');
+        const propertyKeyIndex = parseInt(splittedKeys[1]);
+        if ( propertyKeyIndex < totalProperties - 1) {
+            for (let i = propertyKeyIndex; i < totalProperties; i++) {
+                if (a[`property${propertyKeyIndex + 1}`] === '$total' && b[`property${propertyKeyIndex + 2}`] === '$total' || a[`property${propertyKeyIndex + 1}`] === '$total') {
+                    return -1
+                }
+                if (b[`property${propertyKeyIndex + 1}`] === '$total' && b[`property${propertyKeyIndex + 2}`] === '$total' || b[`property${propertyKeyIndex + 1}`] === '$total') {
+                    return 1
+                }
+            }
+        }
+        
+        return  parseFloat(b[sortBy]) -  parseFloat(a[sortBy]);
+    }
+}
+
 async function main (sortBy='net_sales') {
     const arr = await readFile('./data.txt');
     //build the hash with the propertyO as the parent
@@ -53,67 +82,43 @@ async function main (sortBy='net_sales') {
         // remove $total key
         delete hashArr['$total'];
     }
-    
-    const sortFunc = (key) => {
-        return (a , b) => {
-            if (key === 'property0') {
-                if ((a.property1 === '$total' && a.property2 === '$total') || a.property1 === '$total') {
-                    return -1;
-                }   
-                if ((b.property1 === '$total' && b.property2 === '$total') || b.property1 === '$total') {
-                    return 1;
-                }
-            }
-            if (key === 'property1') {
-                if (b.property2 === '$total') {
-                    return 1;
-                }
-                if (a.property2 === '$total') {
-                    return -1;
-                }
-            }
-            return  parseFloat(b[sortBy]) -  parseFloat(a[sortBy]);
-        }
-    }
+    const totalProperties = getTotalProperties(arr[0]);
     const hierarchicalSort = (data, key, res) => {
         // stopping condition
         if (data.length === 0) return;
         // if the sub category, then sort only by parent
         let arr = [];
-        if (key === 'property0') {
-            arr = data.sort(sortFunc(key));
+        const splittedKeys = key.split('property');
+        const propertyKeyIndex = parseInt(splittedKeys[1]);
+        if (propertyKeyIndex === 0) {
+            arr = data.sort(sortFunc(key, sortBy, totalProperties));
             arr.forEach((fData) => {
                 // save data that have $total in property1
-                if (fData.property1 === '$total') {
+                if (fData[`property${propertyKeyIndex + 1}`] === '$total') {
                     res.push(fData);
                 }
             })
             // filtering new parent data
             data = arr.filter((d) =>  res.findIndex((r) => r === d) === -1)
-        } 
-        if (key === 'property1') {
-            const temp = data.filter((d) => d.property0 === data[0].property0);
-            arr = temp.sort(sortFunc(key));
-            // getting all data that has same parent of property0
-            data = arr;
-        }
-        if (key === 'property2') {
-            const temp = data.filter((d) => d.property1 === data[0].property1);
-            arr = temp.sort(sortFunc(key));
+        } else {
+            const temp = data.filter((d) => d[`property${propertyKeyIndex - 1}`] === data[0][`property${propertyKeyIndex - 1}`]);
+            arr = temp.sort(sortFunc(key, sortBy, totalProperties));
             // push the data for sub categiory
-            arr.forEach((data) => {
-                res.push(data);
-            });
+            if (propertyKeyIndex === totalProperties - 1) {
+                arr.forEach((data) => {
+                    res.push(data);
+                });
+            } else {
+                data = arr;
+            }
         }
         
         // decided what is the next key
         let nextKey ='';
-        if (key === 'property0') {
-            nextKey = 'property1'
-        } else if (key === 'property1') {
-            nextKey = 'property2'
+        if (propertyKeyIndex === totalProperties - 1) {
+            nextKey = `property${0}`;
         } else {
-            nextKey = 'property0'
+            nextKey = `property${propertyKeyIndex + 1}`
         }
         hierarchicalSort(data, nextKey, res)
         return res
