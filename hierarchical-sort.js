@@ -1,11 +1,10 @@
 const fs = require('fs');
 
-const readFile = async (fileName = './example.in') => {
+const readFile = async (fileName = './data.txt') => {
     return new Promise((resolve) => {
         const arr = [];
         const stream = fs.createReadStream(fileName, {encoding: 'utf8'});
         stream.on('data', data => {
-            // console.log(data);
             const splittedData = data.split(/\n/);
             const header = splittedData[0];
             const headerSplit = header.split('|');
@@ -77,13 +76,49 @@ async function main (sortBy='net_sales') {
         }
     }
     const hierarchicalSort = (data, key, res) => {
-        if (data.length === 0) return
-        const arr = data.sort(sortFunc(key));
-        res.push(arr[0]);
-        const newData = data.filter((d) => d !== arr[0])
-        hierarchicalSort(newData, key === 'property0' ? 'property1' : 'property2', res)
+        // stopping condition
+        if (data.length === 0) return;
+        // if the sub category, then sort only by parent
+        let arr = [];
+        if (key === 'property0') {
+            arr = data.sort(sortFunc(key));
+            arr.forEach((fData) => {
+                // save data that have $total in property1
+                if (fData.property1 === '$total') {
+                    res.push(fData);
+                }
+            })
+            // filtering new parent data
+            data = arr.filter((d) =>  res.findIndex((r) => r === d) === -1)
+        } 
+        if (key === 'property1') {
+            const temp = data.filter((d) => d.property0 === data[0].property0);
+            arr = temp.sort(sortFunc(key));
+            // getting all data that has same parent of property0
+            data = arr;
+        }
+        if (key === 'property2') {
+            const temp = data.filter((d) => d.property1 === data[0].property1);
+            arr = temp.sort(sortFunc(key));
+            // push the data for sub categiory
+            arr.forEach((data) => {
+                res.push(data);
+            });
+        }
+        
+        // decided what is the next key
+        let nextKey ='';
+        if (key === 'property0') {
+            nextKey = 'property1'
+        } else if (key === 'property1') {
+            nextKey = 'property2'
+        } else {
+            nextKey = 'property0'
+        }
+        hierarchicalSort(data, nextKey, res)
         return res
     }
+    
     const sortedHash = {};
     Object.keys(hashArr).forEach((key) => {
       sortedHash[key] = hierarchicalSort(hashArr[key], 'property0', []);
